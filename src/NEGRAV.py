@@ -48,6 +48,14 @@ ALARM_REPORT = {
 }
 
 
+'''Important Variables'''
+TCP_IP = '192.168.1.110'
+TCP_PORT_SERVER = 5310
+TCP_PORT_CLIENT =5315
+BUFFER_SIZE = 1024
+
+
+
 """ send message Functions"""
 def add_header(header,message):
 	aux=header.copy()
