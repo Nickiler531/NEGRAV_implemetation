@@ -3,7 +3,7 @@
 import socket
 
 
-TCP_IP = '192.168.1.110'
+TCP_IP = '127.0.0.1'
 TCP_PORT = 5310
 TCP_PORT_SEND=5315
 BUFFER_SIZE = 1024

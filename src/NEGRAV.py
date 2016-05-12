@@ -57,22 +57,22 @@ BUFFER_SIZE = 1024
 
 
 """ send message Functions"""
-def add_header(header,message):
+def json_add_header(header,message):
 	aux=header.copy()
 	aux.update(message)
 	return json.dumps(aux)
 
-def add_request(ip):
+def json_add_request(ip):
 	aux= ADD_REQUEST.copy()
 	aux["source_ip"]=ip
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)
 
-def add_response(ip):
+def json_add_response(ip):
 	aux= ADD_RESPONSE.copy()
 	aux["assign_ip"]=ip
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)
 
-def node_report(ip, type, sensor, GPS):
+def json_node_report(ip, type, sensor, GPS):
 	aux= NODE_REPORT.copy()
 	aux["node_ip"]=ip
 	if type in ('MN','SN'):
@@ -81,24 +81,24 @@ def node_report(ip, type, sensor, GPS):
 		return "error type"
 	aux["sensor"]=sensor
 	aux["GPS"]=GPS
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)
 
-def get_request(get_type, sensor_list):
+def json_get_request(get_type, sensor_list):
 	aux= GET_REQUEST.copy()
 	if get_type in ('all','array'):
 		aux["get_type"]=get_type
 	else:
 		return "error get type"
 	aux["sensor"]=sensor_list
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)
 
-def get_response(sensor_list):
+def json_get_response(sensor_list):
 	aux= GET_RESPONSE.copy()
 	aux["sensor"]=sensor_list
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)
 
-def alarm_report(ip, sensor_name, value):
+def json_alarm_report(ip, sensor_name, value):
 	aux= ALARM_REPORT.copy()
 	aux["sensor"]=sensor_name
 	aux["value"]=value
-	return add_header(HEADER,aux)
+	return json_add_header(HEADER,aux)

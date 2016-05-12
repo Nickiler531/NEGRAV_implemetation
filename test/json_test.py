@@ -18,9 +18,9 @@ def json_message(x,y):
 
 
 
-json_string = '{"hello":"Nick"}'
+json_string = '{"hello":"Nick", "cmd":"add_request"}'
 parsed_json = json.loads(json_string)
-print(parsed_json['hello'])
+print(parsed_json['cmd'])
 
 ip="192.168.2.15"
 d = {  #This is a dictionary
