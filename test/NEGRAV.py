@@ -5,14 +5,6 @@ This file contains all the NEGRAV functions. for all kind of devices
 
 import json
 
-"""List of keys in each cmd type. this is used to verify"""
-ADD_REQUEST_keys  = ["source_ip"]
-ADD_RESPONSE_keys = ["assign_ip"]
-NODE_REPORT_keys  = ["node_ip","type","sensor"]
-GET_REQUEST_keys  = ["get_type", "sensor"]
-GET_RESPONSE_keys = ["sensor"]
-ALARM_REPORT_keys = ["node_ip","sensor","value"]
-
 """Dictionaries"""
 HEADER= { 
 	'protocol': 'NEGRAV', 
@@ -55,13 +47,14 @@ ALARM_REPORT = {
 	'value': 'NULL'
 }
 
+
 '''Important Variables'''
 IP_BASE = '127.0.0.1'
 TCP_PORT_SERVER = 5310
 TCP_PORT_CLIENT =5315
 BUFFER_SIZE = 1024
 
-ERROR = 0
+
 
 """ send message Functions"""
 def json_add_header(header,message):
@@ -109,30 +102,3 @@ def json_alarm_report(ip, sensor_name, value):
 	aux["sensor"]=sensor_name
 	aux["value"]=value
 	return json_add_header(HEADER,aux)
-
-def negrav_parser(json_msg):
-	try:
-		parsed = json.loads(json_msg) #Dict that contain the parsed json
-	except: 
-		print "Invalid Json Format"
-		return ERROR
-	try:
-		command = parsed['cmd']
-		if command == "add_response":
-			for key in ADD_RESPONSE_keys:
-				parsed[key]
-		# elif command == add_request:
-		# 	for key in ADD_REQUEST_keys:
-		# 		print parsed[key]
-		# elif command == node_report:
-		# 	pass
-		# elif command == get:
-		# 	pass
-		# elif command == alarm_report:
-		# 	pass
-		# parsed['protocol']
-		# parsed['version']
-	except:
-		print "Invalid NEGRAV message"
-
-negrav_parser('{"protocol": "NEGRAV","version":"v1.0","cmd":"add_response","assign_ip":"0.0.0.0"}')
