@@ -1,0 +1,3 @@
+This is the Journal of the work done in the NEGRAV first implementation.
+
+NVS 5-may-2016: The Json part will be implemented using dictionaries. For that, the update function will be used to merge the HEADER part (made separatedly to be modified later) and the commands.
