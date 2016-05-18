@@ -61,7 +61,11 @@ TCP_PORT_SERVER = 5310
 TCP_PORT_CLIENT =5315
 BUFFER_SIZE = 1024
 
-ERROR = 0
+NEGRAR_ERROR_NONE 			= 0
+NEGRAV_ERROR_INVALID_JSON 	= -1
+NEGRAV_ERROR_INVALID_FORMAT = -2
+
+
 
 """ send message Functions"""
 def json_add_header(header,message):
@@ -115,24 +119,36 @@ def negrav_parser(json_msg):
 		parsed = json.loads(json_msg) #Dict that contain the parsed json
 	except: 
 		print "Invalid Json Format"
-		return ERROR
+		return NEGRAV_ERROR_INVALID_JSON
 	try:
 		command = parsed['cmd']
+	except:
+		print "Invalid NEGRAV message. Missing cmd"
+		return NEGRAV_ERROR_INVALID_FORMAT
+	try:
 		if command == "add_response":
 			for key in ADD_RESPONSE_keys:
 				parsed[key]
-		# elif command == add_request:
-		# 	for key in ADD_REQUEST_keys:
-		# 		print parsed[key]
-		# elif command == node_report:
-		# 	pass
-		# elif command == get:
-		# 	pass
-		# elif command == alarm_report:
-		# 	pass
-		# parsed['protocol']
-		# parsed['version']
+		elif command == "add_request":
+			for key in ADD_REQUEST_keys:
+				parsed[key]
+		elif command == "node_report":
+			for key in NODE_REPORT_keys:
+				parsed[key]
+		elif command == "get":
+			pass
+		elif command == "alarm_report":
+			for key in ALARM_REPORT_keys:
+				parsed[key]
+			pass
+		else:
+			print "Command Not found"
+			return NEGRAV_ERROR_INVALID_FORMAT 
 	except:
-		print "Invalid NEGRAV message"
+		print 'Invalid NEGRAV message. Missing "%s"' % key
+		return NEGRAV_ERROR_INVALID_FORMAT
 
-negrav_parser('{"protocol": "NEGRAV","version":"v1.0","cmd":"add_response","assign_ip":"0.0.0.0"}')
+	return (NEGRAR_ERROR_NONE, parsed)
+
+(status, parsed) = negrav_parser('{"protocol": "NEGRAV","version":"v1.0","cmd":"add_response","assign_ip":"0.0.0.0"}')
+print parsed["cmd"]
