@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import time
 import socket
 from NEGRAV import *
 
@@ -43,11 +44,20 @@ def add_response (conn,ip):
 	#print json_add_response (ip)
 	#conn.close()
 	
-	
-   	
+def get_request(ip, get_type = "all", sensor_list = []):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_get_request (get_type, sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	data = s.recv(BUFFER_SIZE)
+	# ACA VA EL PARSER
+	s.close()
+   	return data
 
 conn, adress, data = server_listening()
 print "received add request:", data
 add_response(conn, '10.0.0.3')
 conn, adress, data = server_listening()
 print "received node report:", data
+time.sleep(5)
+data = get_request (IP_BASE)
+print "received get response", data
