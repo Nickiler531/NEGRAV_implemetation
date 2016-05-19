@@ -32,12 +32,8 @@ def server_listening():
 	s.bind(('',TCP_PORT_SERVER))
 	s.listen(1)
 	conn, address = s.accept()
-	#while 1:
-	data = conn.recv (BUFFER_SIZE)
-		#Aca va el parser?
-	#	if not data: break
-	#print data
-	return conn, address, data
+	error, data = negrav_parser(conn.recv (BUFFER_SIZE))
+	return conn, address, error, data
 
 def add_response (conn,ip):
 	conn.sendall(json_add_response(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
@@ -48,16 +44,29 @@ def get_request(ip, get_type = "all", sensor_list = []):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((ip, TCP_PORT_SERVER))
 	s.sendall(json_get_request (get_type, sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
-	data = s.recv(BUFFER_SIZE)
-	# ACA VA EL PARSER
+	error, data = negrav_parser(s.recv(BUFFER_SIZE))
 	s.close()
-   	return data
+   	return error, data
 
-conn, adress, data = server_listening()
+conn, adress, error, data = server_listening()
 print "received add request:", data
+print 'Error:', error
 add_response(conn, '10.0.0.3')
-conn, adress, data = server_listening()
+conn, adress, error, data = server_listening()
 print "received node report:", data
+print 'Error:', error
+aux = data["sensor"]
+print "!!!!!!!!!!%r" % aux
+
+sensor_list = []
+print len(aux)
+i = 0
+while i < len(aux):
+	sensor_list.append(aux[i]['name'])
+	i += 1
+print sensor_list
 time.sleep(5)
-data = get_request (IP_BASE)
+
+error, data = get_request (IP_BASE,'array',sensor_list)
 print "received get response", data
+print 'Error:', error
