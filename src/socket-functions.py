@@ -1,13 +1,7 @@
 import socket
 from NEGRAV import *
 
-def add_request(ip):
-	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((IP_BASE, TCP_PORT_SERVER))
-	s.sendall(json_add_request(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
-	data = s.recv(BUFFER_SIZE)
-   	s.close()
-   	return data
+###################### FUNCTIONS FOR BASE STATION ##############################
 
 def server_listening():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -21,6 +15,17 @@ def server_listening():
 def add_response (conn,ip):
 	conn.sendall(json_add_response(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
 	#conn.close() the client does this
+
+###################### FUNCTIONS FOR NODE STATION ##############################
+
+
+def add_request(ip):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((IP_BASE, TCP_PORT_SERVER))
+	s.sendall(json_add_request(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	data = s.recv(BUFFER_SIZE)
+   	s.close()
+   	return data
 
 def node_report(ip, type, sensor, GPS):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
