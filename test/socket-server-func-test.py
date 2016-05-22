@@ -48,25 +48,49 @@ def get_request(ip, get_type = "all", sensor_list = []):
 	s.close()
    	return error, data
 
+def config_request(ip,assign_ip = '0', node_time = '0', sensor = '0'):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_config_request(assign_ip, node_time, sensor))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
+	s.close()
+
+
+
 conn, adress, error, data = server_listening()
 print "received add request:", data
 print 'Error:', error
-add_response(conn, '10.0.0.3')
+add_response(conn,'10.0.0.3')
 conn, adress, error, data = server_listening()
 print "received node report:", data
 print 'Error:', error
 aux = data["sensor"]
-print "!!!!!!!!!!%r" % aux
+print aux#"!!!!!!!!!!%r" % aux
 
 sensor_list = []
-print len(aux)
+#print len(aux)
 i = 0
 while i < len(aux):
 	sensor_list.append(aux[i]['name'])
 	i += 1
-print sensor_list
+print"sensors available:",sensor_list
 time.sleep(5)
 
-error, data = get_request (IP_BASE,'array',sensor_list)
+error, data = get_request (IP_BASE, sensor_list = sensor_list)# Colocando el nombre del campo se puede omitir el parametro de la mitad que tiene un valor por defecto definido
 print "received get response", data
 print 'Error:', error
+
+time.sleep(5)
+
+i=0
+while i<2:
+	conn, adress, error, data = server_listening()
+	print "received alarm report:", data
+	print 'Error:', error
+	i+=1
+
+
+
+time.sleep(5)
+
+config_request(IP_BASE, '10.0.0.4', sensor= [{'name':'temp',"period": '10', "alarms": ["100","0"]} , {'name':'humidity',"period": '10', "alarms": ["20","0"]} ])
