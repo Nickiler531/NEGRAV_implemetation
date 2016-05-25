@@ -116,10 +116,10 @@ for name in sensor_list :
 	time.sleep (1)
 	#pass
 
-#time.sleep(5)
+
 
 conn, adress, error, data = server_listening()
-print 'received configure request', data
+print 'received configure request:', data
 print 'Error:', error
 
 if data["assign_ip"] != '0':
@@ -175,6 +175,21 @@ if data["sensor"] != '0':
 			print "new low alarm", extra_2_l_alarm
 		i += 1
 
+time.sleep(5)
+
+conn, adress, error, data = server_listening()
+print 'received move request:', data
+print 'Error:', error
+
+move_target_lat = data['target_location'][0]
+move_target_long = data['target_location'][1]
+
+if data['road_map'] != '0':
+	road_map = data['road_map']
+#else algoritmo de ruta
+
+print "move target lat and long:", move_target_lat,move_target_long
+print "road_map:", road_map
 
 
 
