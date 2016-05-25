@@ -55,6 +55,13 @@ ALARM_REPORT = {
 	'value': 'NULL'
 }
 
+CONFIGURE_REQUEST = {
+	'cmd': 'node_configure',
+	'assign_ip': 'NULL',
+	'set_node_time': 'NULL',
+	'sensor': 'NULL'
+}
+
 '''Important Variables'''
 IP_BASE = '127.0.0.1'
 TCP_PORT_SERVER = 5310
@@ -110,8 +117,16 @@ def json_get_response(sensor_list):
 
 def json_alarm_report(ip, sensor_name, value):
 	aux= ALARM_REPORT.copy()
+	aux["node_ip"]=ip
 	aux["sensor"]=sensor_name
 	aux["value"]=value
+	return json_add_header(HEADER,aux)
+
+def json_config_request (ip, node_time, sensor):
+	aux = CONFIGURE_REQUEST.copy()
+	aux["assign_ip"]=ip
+	aux["set_node_time"]=node_time
+	aux["sensor"]=sensor
 	return json_add_header(HEADER,aux)
 
 def negrav_parser(json_msg):
@@ -140,6 +155,8 @@ def negrav_parser(json_msg):
 		elif command == "alarm_report":
 			for key in ALARM_REPORT_keys:
 				parsed[key]
+			pass
+		elif command == "node_configure":
 			pass
 		else:
 			print "Command Not found"
