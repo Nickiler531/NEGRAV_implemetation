@@ -12,6 +12,7 @@ NODE_REPORT_keys  = ["node_ip","type","sensor"]
 GET_REQUEST_keys  = ["get_type", "sensor"]
 GET_RESPONSE_keys = ["sensor"]
 ALARM_REPORT_keys = ["node_ip","sensor","value"]
+MOVE_REQUEST_keys = ["target_location"]
 
 """Dictionaries"""
 HEADER= { 
@@ -62,6 +63,12 @@ CONFIGURE_REQUEST = {
 	'sensor': 'NULL'
 }
 
+MOVE_REQUEST ={
+	'cmd':'move_request',
+	'target_location':'NULL',
+	'road_map':'NULL'
+}
+
 '''Important Variables'''
 IP_BASE = '127.0.0.1'
 TCP_PORT_SERVER = 5310
@@ -73,6 +80,8 @@ NEGRAV_ERROR_INVALID_JSON 	= -1
 NEGRAV_ERROR_INVALID_FORMAT = -2
 
 
+
+"""-------------------BASIC JSON FUNCTIONS-------------------------"""
 
 """ send message Functions"""
 def json_add_header(header,message):
@@ -129,6 +138,12 @@ def json_config_request (ip, node_time, sensor):
 	aux["sensor"]=sensor
 	return json_add_header(HEADER,aux)
 
+def json_move_request (target_location,road_map):
+	aux = MOVE_REQUEST.copy()	
+	aux["target_location"]=target_location
+	aux["road_map"]=road_map
+	return json_add_header(HEADER,aux)
+
 def negrav_parser(json_msg):
 	try:
 		parsed = json.loads(json_msg) #Dict that contain the parsed json
@@ -158,6 +173,9 @@ def negrav_parser(json_msg):
 			pass
 		elif command == "node_configure":
 			pass
+		elif command == "move_request":
+			for key in MOVE_REQUEST_keys:
+				parsed[key]
 		else:
 			print "Command Not found"
 			return NEGRAV_ERROR_INVALID_FORMAT 
@@ -169,3 +187,97 @@ def negrav_parser(json_msg):
 
 (status, parsed) = negrav_parser('{"protocol": "NEGRAV","version":"v1.0","cmd":"add_response","assign_ip":"0.0.0.0"}')
 print parsed["cmd"]
+
+
+
+
+
+def server_listening():
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.bind(('',TCP_PORT_SERVER))
+	s.listen(1)
+	conn, address = s.accept()
+	error, data = negrav_parser(conn.recv (BUFFER_SIZE))
+	return conn, address, error, data
+
+"""-------------------------------------------Base Station Functions----------------------------------------------------"""
+
+def add_response (conn,ip):
+	conn.sendall(json_add_response(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#print json_add_response (ip)
+	#conn.close()
+	
+def get_request(ip, get_type = "all", sensor_list = []):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_get_request (get_type, sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	error, data = negrav_parser(s.recv(BUFFER_SIZE))
+	s.close()
+   	return error, data
+
+def config_request(ip,assign_ip = '0', node_time = '0', sensor = '0'):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_config_request(assign_ip, node_time, sensor))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
+	s.close()
+
+
+def move_request(ip, target_location, road_map = '0'):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_move_request(target_location, road_map))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
+	s.close()
+
+"""------------------------------------------------Node Station Functions----------------------------------------------"""
+
+def add_request(ip):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((IP_BASE, TCP_PORT_SERVER))
+	s.sendall(json_add_request(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	error,data = negrav_parser(s.recv(BUFFER_SIZE))
+	s.close()
+   	return error,data
+
+def node_report(ip, type, sensor, GPS):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((IP_BASE, TCP_PORT_SERVER))
+	s.sendall(json_node_report(ip, type, sensor, GPS))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	s.close()
+
+def get_response(conn, get_type, sensor_list, sensor_values):
+	if get_type == 'all':
+		sensor_list = sensor_values
+	else:
+		i=0
+
+		while i < len(sensor_list):
+			aux = sensor_list[i]
+			if aux == 'battery':
+				sensor_list[i] = sensor_values [0]
+			#Estoy suponiendo que los valores estan en una lista ordenada
+			if aux == 'temp':
+				#print sensor_list
+				sensor_list[i] = sensor_values [1]
+				#print sensor_list
+			if aux == 'radiation':
+				sensor_list[i] = sensor_values [2]
+			if aux == 'humidity':
+				sensor_list[i] = sensor_values [3]
+			if aux == 'extra_1':
+				sensor_list[i] = sensor_values [4]
+			if aux == 'extra_2':
+				sensor_list[i] = sensor_values [5]
+			i = i+1
+		
+	conn.sendall(json_get_response(sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+
+def alarm_report(ip, sensor_name, value):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((IP_BASE, TCP_PORT_SERVER))
+	s.sendall(json_alarm_report(ip, sensor_name, value))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
+	#error,data = negrav_parser(s.recv(BUFFER_SIZE))
+	s.close()
+   	#return data
