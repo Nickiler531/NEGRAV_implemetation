@@ -12,6 +12,7 @@ NODE_REPORT_keys  = ["node_ip","type","sensor"]
 GET_REQUEST_keys  = ["get_type", "sensor"]
 GET_RESPONSE_keys = ["sensor"]
 ALARM_REPORT_keys = ["node_ip","sensor","value"]
+MOVE_REQUEST_keys = ["target_location"]
 
 """Dictionaries"""
 HEADER= { 
@@ -60,6 +61,12 @@ CONFIGURE_REQUEST = {
 	'assign_ip': 'NULL',
 	'set_node_time': 'NULL',
 	'sensor': 'NULL'
+}
+
+MOVE_REQUEST ={
+	'cmd':'move_request',
+	'target_location':'NULL',
+	'road_map':'NULL'
 }
 
 '''Important Variables'''
@@ -129,6 +136,12 @@ def json_config_request (ip, node_time, sensor):
 	aux["sensor"]=sensor
 	return json_add_header(HEADER,aux)
 
+def json_move_request (target_location,road_map):
+	aux = MOVE_REQUEST.copy()	
+	aux["target_location"]=target_location
+	aux["road_map"]=road_map
+	return json_add_header(HEADER,aux)
+
 def negrav_parser(json_msg):
 	try:
 		parsed = json.loads(json_msg) #Dict that contain the parsed json
@@ -158,6 +171,9 @@ def negrav_parser(json_msg):
 			pass
 		elif command == "node_configure":
 			pass
+		elif command == "move_request":
+			for key in MOVE_REQUEST_keys:
+				parsed[key]
 		else:
 			print "Command Not found"
 			return NEGRAV_ERROR_INVALID_FORMAT 

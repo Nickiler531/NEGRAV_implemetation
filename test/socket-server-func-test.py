@@ -56,6 +56,12 @@ def config_request(ip,assign_ip = '0', node_time = '0', sensor = '0'):
 	s.close()
 
 
+def move_request(ip, target_location, road_map = '0'):
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s.connect((ip, TCP_PORT_SERVER))
+	s.sendall(json_move_request(target_location, road_map))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
+	s.close()
 
 conn, adress, error, data = server_listening()
 print "received add request:", data
@@ -94,3 +100,7 @@ while i<2:
 time.sleep(5)
 
 config_request(IP_BASE, '10.0.0.4', sensor= [{'name':'temp',"period": '10', "alarms": ["100","0"]} , {'name':'humidity',"period": '10', "alarms": ["20","0"]} ])
+
+time.sleep(5)
+
+move_request(IP_BASE,target_location=["4.13124" ,"4.3243"], road_map=[["1.234" ,"1.12312"], ["2.13214" ,"2.31241"]])
