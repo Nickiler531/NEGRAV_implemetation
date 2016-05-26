@@ -5,6 +5,8 @@ This file contains all the NEGRAV functions. for all kind of devices
 
 import json
 import socket
+import os
+import errno
 
 """List of keys in each cmd type. this is used to verify"""
 ADD_REQUEST_keys  = ["source_ip"]
@@ -210,11 +212,20 @@ def add_response (conn,ip):
 	
 def get_request(ip, get_type = "all", sensor_list = []):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((ip, TCP_PORT_SERVER))
-	s.sendall(json_get_request (get_type, sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
-	error, data = negrav_parser(s.recv(BUFFER_SIZE))
-	s.close()
-   	return error, data
+	try:
+		s.connect((ip, TCP_PORT_SERVER))
+		s.sendall(json_get_request (get_type, sensor_list))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+		error, data = negrav_parser(s.recv(BUFFER_SIZE))
+		s.close()
+	except socket.error, v:
+		error=v[0]
+		if error==errno.ECONNREFUSED:
+			data = "NULL"
+			print "Connection Refused"
+		else:
+			print "FATAL ERROR: SOCKET ERROR UNKNOWN"
+			os.exit()
+	return error, data
 
 def config_request(ip,assign_ip = '0', node_time = '0', sensor = '0'):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -235,10 +246,20 @@ def move_request(ip, target_location, road_map = '0'):
 
 def add_request(ip):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s.connect((IP_BASE, TCP_PORT_SERVER))
-	s.sendall(json_add_request(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
-	error,data = negrav_parser(s.recv(BUFFER_SIZE))
-	s.close()
+	try:
+		s.connect((IP_BASE, TCP_PORT_SERVER))
+		s.sendall(json_add_request(ip))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+		error,data = negrav_parser(s.recv(BUFFER_SIZE))
+		s.close()
+	except socket.error, v:
+		error=v[0]
+		if error==errno.ECONNREFUSED:
+			data = "NULL"
+			print "Connection Refused"
+		else:
+			print "FATAL ERROR: SOCKET ERROR UNKNOWN"
+			os.exit()
+
    	return error,data
 
 def node_report(ip, type, sensor, GPS):

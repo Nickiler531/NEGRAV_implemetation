@@ -3,6 +3,7 @@ import pickle
 import time
 import os
 import sys
+import errno
 
 sys.path.append("/opt/NEGRAV/src")
 from NEGRAV import *
@@ -46,6 +47,7 @@ def wait_for_add_process():
 	a = int(f.read())
 	print ""
 	print ""
+	time.sleep(1)
 	print "Press The button to add the node to the network"
 	while a == 1:
 		time.sleep(1)
@@ -54,16 +56,29 @@ def wait_for_add_process():
 	f.close()
 	print "Add process in progress!!! please wait"
 
+def init_env():
+	try:
+		f = open(NODE_CONFIG)
+		info_pickle = pickle.load(f)
+		f.close()
+		return info_pickle
+	except:
+		print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
+		sys.exit()
+
+def save_env(info_pickle):
+	try:
+		f = open(NODE_CONFIG, 'w')
+		pickle.dump(info_pickle, f)
+		f.close()
+	except:
+		print "FATAL ERROR: Could not save de enviroment"
+		sys.exit()
+
+
 
 #Program Start. Load node information
-try:
-	f = open(NODE_CONFIG)
-	node_info = pickle.load(f)
-	f.close()
-except:
-	print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
-	sys.exit()
-
+node_info = init_env()
 ssid = read_SSID()
 add_process = False
 
@@ -84,18 +99,24 @@ else:
 print "The current NEGRAV network is = '%s'" % ssid
 print "Setting the wifi ad-hoc network"
 os.system("sh /opt/NEGRAV/wifi_adhoc_setup.sh %s" % ssid)
-time.sleep(2)
+time.sleep(5)
 os.system("ifconfig wlan0 %s" % ip)
-time.sleep(2)
+time.sleep(1)
+os.system("ifconfig wlan0")
 
-if add_process:
+while add_process:
 	wait_for_add_process()
-	error, data = add_request(ip)
-	print 'Received add response:', data
-	print 'Error:', error
-	ip = data["assign_ip"]
-	print 'new ip:', ip
-	node_report (ip,'SN',[{'name':'temp',"units":['C','F']} , {'name':'humidity',"units":['HR','%']} ],('3.53N','6.54E'))# revisar como se envian las coordenadas, aca solo me acepto un entero
-
+	error, json_data = add_request(ip)
+	if not error:
+		print 'Received add response:', json_data
+		ip = json_data["assign_ip"]
+		print 'new ip:', ip
+		time.sleep(3)
+		os.system("ifconfig wlan0 %s" % ip)
+		os.system("ifconfig wlan0")
+		node_info["node_ip"] = ip;
+		save_env(node_info)
+		node_report (ip,'SN',[{'name':'temp',"units":['C','F']} , {'name':'humidity',"units":['HR','%']} ],('3.53N','6.54E'))# revisar como se envian las coordenadas, aca solo me acepto un entero
+		add_process = False
 
 
