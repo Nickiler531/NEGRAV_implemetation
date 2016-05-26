@@ -2,6 +2,10 @@ import pickle
 import time
 import os
 import sys
+import re
+
+sys.path.append("/opt/NEGRAV/src")
+from NEGRAV import *
 
 NODE_DB = "/opt/NEGRAV/node.db" #database of all the nodes in the network
 
@@ -29,6 +33,17 @@ def read_SSID():
 	'''Read the dipswitch/config file or thing that set the SSID and return the complete SSID'''
 	return "NEGRAV-1"
 
+def get_avaiable_ip(temporary_ip):
+	'''Used in add process. sees if the ip is valid and return the next avaiable one for the corresponding node'''
+	SN = re.compile("10.1.100.[1-99]")
+	MN = re.compile("10.2.100.[1-99]")
+	if SN.match(temporary_ip):
+		return '10.1.0.50'
+	elif MN.match(temporary_ip):
+		return '10.2.0.50'
+	else:
+		print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
+		sys.exit()
 
 #Program Start. Load node information
 try:
@@ -51,6 +66,25 @@ os.system("sh /opt/NEGRAV/wifi_adhoc_setup.sh %s" % ssid)
 time.sleep(2)
 os.system("ifconfig wlan0 %s" % IP_BASE_STATION)
 time.sleep(2)
+
+
+
+
+#Server listening
+ss = server_init()
+while 1:
+	
+	conn, adress, error, data = server_listening(ss)
+	if data["cmd"] == "add_request":
+		print "received add request:", data
+		print 'Error:', error
+		print data["source_ip"]
+		add_response(conn,get_avaiable_ip(data["source_ip"]))
+		conn, adress, error, data = server_listening(ss)
+		print "received node report:", data
+		print 'Error:', error
+		aux = data["sensor"]
+		print aux#"!!!!!!!!!!%r" % aux
 
 
 
