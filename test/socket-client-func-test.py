@@ -64,6 +64,26 @@ def alarm_report(ip, sensor_name, value):
 	s.close()
    	#return data
 
+MIN_DELTA = 5
+
+
+def move_update (conn, target_location, location, delta, battery, range_status, current_target = '0'):
+	
+	if delta < MIN_DELTA:
+		reason = "no_movement"
+	elif range_status == "bad":
+		reason = "out_of_range"
+	elif target_location == location: #probablemente sera necesario utilizar una tolerancia
+		reason = "destination_reached"
+	else:
+		reason = 'moving'
+	print reason
+	conn.sendall(json_move_update(location,str(delta), battery, current_target))
+	return reason
+
+def move_done(conn, location, reason, battery):
+	conn.sendall(json_move_done(location, reason, battery))
+
 
 
 		 
@@ -191,7 +211,21 @@ if data['road_map'] != '0':
 print "move target lat and long:", move_target_lat,move_target_long
 print "road_map:", road_map
 
-
+location = ['0','0']
+target_location = data["target_location"]
+i=0;
+aux = 1
+while aux == 1:
+	i+=1			# en esta linea va la funcion de movimiento se deben actualizar aca los valores que se le pasan a move_update
+					# se debe actualizar tambien el current target
+	if i>3:			# con i estoy simulando la funcion de movimiento del nodo
+		location = target_location
+	reason = move_update (conn, target_location, location, 10, '5', 'good', '12')
+	if reason != 'moving':
+		aux = 0
+	time.sleep(1)	#aca iria el periodo para realizar las actualizaciones de move
+battery = '5'
+move_done(conn, location, reason, battery)
 
 	
 

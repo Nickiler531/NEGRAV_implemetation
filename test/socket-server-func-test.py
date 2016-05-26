@@ -61,7 +61,31 @@ def move_request(ip, target_location, road_map = '0'):
 	s.connect((ip, TCP_PORT_SERVER))
 	s.sendall(json_move_request(target_location, road_map))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
 	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
-	s.close()
+	error, data = negrav_parser(s.recv(BUFFER_SIZE))
+	while data["cmd"] == 'move_update':
+		error, data = negrav_parser(s.recv(BUFFER_SIZE))
+	 	if data["cmd"] == 'move_done':
+	 		print "Received move done:", data
+			print "Finished movement"
+			s.close()
+		else:
+			print "Received move update:", data
+	 		location = data["current_location"]
+	 		delta = data["move_delta"]
+	 		current_target = data["current_target"]
+	 		print "movement delta:", delta
+	 		print "current location:", location
+	 		#if current_target != 'NULL':
+	 		print "moving to:", current_target 
+	#if data["cmd"] == 'move_done':
+	#	print "Received move done:", data
+	#	print "Finished movement"
+		if error != 0:
+			s.close()
+	
+	return error,data
+
+
 
 conn, adress, error, data = server_listening()
 print "received add request:", data

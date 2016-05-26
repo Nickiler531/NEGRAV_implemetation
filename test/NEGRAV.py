@@ -13,6 +13,8 @@ GET_REQUEST_keys  = ["get_type", "sensor"]
 GET_RESPONSE_keys = ["sensor"]
 ALARM_REPORT_keys = ["node_ip","sensor","value"]
 MOVE_REQUEST_keys = ["target_location"]
+MOVE_UPDATE_keys = ["current_location", "move_delta", "battery"]
+MOVE_DONE_keys = ["current_location", "reason", "battery"]
 
 """Dictionaries"""
 HEADER= { 
@@ -67,6 +69,21 @@ MOVE_REQUEST ={
 	'cmd':'move_request',
 	'target_location':'NULL',
 	'road_map':'NULL'
+}
+
+MOVE_UPDATE ={
+	'cmd': 'move_update',
+	'current_location':'NULL',
+	'move_delta': 'NULL',
+	'battery': 'NULL',
+	'current_target':'NULL'
+}
+
+MOVE_DONE ={
+	'cmd': 'move_done',
+	'current_location':'NULL',
+	'reason': 'NULL',
+	'battery': 'NULL',
 }
 
 '''Important Variables'''
@@ -142,6 +159,21 @@ def json_move_request (target_location,road_map):
 	aux["road_map"]=road_map
 	return json_add_header(HEADER,aux)
 
+def json_move_update (location,delta, battery, current_target):
+	aux = MOVE_UPDATE.copy()	
+	aux["current_location"]=location
+	aux["move_delta"]=delta
+	aux["battery"]=battery
+	aux["current_target"]=current_target
+	return json_add_header(HEADER,aux)
+
+def json_move_done (location, reason, battery):
+	aux = MOVE_DONE.copy()	
+	aux["current_location"]=location
+	aux["reason"]=reason
+	aux["battery"]=battery
+	return json_add_header(HEADER,aux)
+
 def negrav_parser(json_msg):
 	try:
 		parsed = json.loads(json_msg) #Dict that contain the parsed json
@@ -173,6 +205,12 @@ def negrav_parser(json_msg):
 			pass
 		elif command == "move_request":
 			for key in MOVE_REQUEST_keys:
+				parsed[key]
+		elif command == "move_update":
+			for key in MOVE_UPDATE_keys:
+				parsed[key]
+		elif command == "move_done":
+			for key in MOVE_DONE_keys:
 				parsed[key]
 		else:
 			print "Command Not found"
