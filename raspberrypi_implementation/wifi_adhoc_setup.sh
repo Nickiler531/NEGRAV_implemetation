@@ -3,4 +3,4 @@ if [ $# != 1 ] ; then
  exit
 fi
 $rmt iwconfig wlan0 mode ad-hoc 
-$rmt iwconfig wlan0 essid '\"'$1'\"'
+$rmt iwconfig wlan0 essid $1

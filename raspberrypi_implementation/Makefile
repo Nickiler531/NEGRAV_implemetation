@@ -5,6 +5,7 @@ install:
 deploy: 
 	python deploy.py
 	cp wifi_adhoc_setup.sh /opt/NEGRAV
-	cp Negrav_node.py /opt/NEGRAV/Negrav_node.py
+	cp Negrav_base.py /opt/NEGRAV/
+	cp -R ../src /opt/NEGRAV/
 clean:
 	rm -r /opt/NEGRAV

@@ -4,6 +4,9 @@ import time
 import os
 import sys
 
+sys.path.append("/opt/NEGRAV/src")
+from NEGRAV import *
+
 NODE_CONFIG = "/opt/NEGRAV/node.config"
 
 #Button init constants
@@ -87,6 +90,12 @@ time.sleep(2)
 
 if add_process:
 	wait_for_add_process()
+	error, data = add_request(ip)
+	print 'Received add response:', data
+	print 'Error:', error
+	ip = data["assign_ip"]
+	print 'new ip:', ip
+	node_report (ip,'SN',[{'name':'temp',"units":['C','F']} , {'name':'humidity',"units":['HR','%']} ],('3.53N','6.54E'))# revisar como se envian las coordenadas, aca solo me acepto un entero
 
 
 

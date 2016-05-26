@@ -4,6 +4,7 @@ This file contains all the NEGRAV functions. for all kind of devices
 """
 
 import json
+import socket
 
 """List of keys in each cmd type. this is used to verify"""
 ADD_REQUEST_keys  = ["source_ip"]
@@ -70,7 +71,7 @@ MOVE_REQUEST ={
 }
 
 '''Important Variables'''
-IP_BASE = '127.0.0.1'
+IP_BASE = '10.0.0.100'
 TCP_PORT_SERVER = 5310
 TCP_PORT_CLIENT =5315
 BUFFER_SIZE = 1024
@@ -189,13 +190,13 @@ def negrav_parser(json_msg):
 print parsed["cmd"]
 
 
-
-
-
-def server_listening():
+def server_init():
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.bind(('',TCP_PORT_SERVER))
 	s.listen(1)
+	return s
+
+def server_listening(s):
 	conn, address = s.accept()
 	error, data = negrav_parser(conn.recv (BUFFER_SIZE))
 	return conn, address, error, data
