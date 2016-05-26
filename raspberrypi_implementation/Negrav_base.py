@@ -3,6 +3,7 @@ import time
 import os
 import sys
 import re
+import thread
 
 sys.path.append("/opt/NEGRAV/src")
 from NEGRAV import *
@@ -45,17 +46,35 @@ def get_avaiable_ip(temporary_ip):
 		print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
 		sys.exit()
 
+def init_env():
+	try:
+		f = open(NODE_DB)
+		info_pickle = pickle.load(f)
+		f.close()
+		return info_pickle
+	except:
+		print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
+		sys.exit()
+
+def save_env(info_pickle):
+	try:
+		f = open(NODE_DB, 'w')
+		pickle.dump(info_pickle, f)
+		f.close()
+	except:
+		print "FATAL ERROR: Could not save de enviroment"
+		sys.exit()
+
+
+def test_me():
+	while 1:
+		print "HELLOOO"
+		time.sleep(1)
+
+
 #Program Start. Load node information
-try:
-	f = open(NODE_DB)
-	node_db = pickle.load(f)
-	f.close()
-except:
-	print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
-	sys.exit()
-
+node_db = init_env()
 ssid = read_SSID()
-
 
 print "\n\n\n\n\n\n"
 print "Welcome to the NEGRAV Base Station"
@@ -68,7 +87,7 @@ os.system("ifconfig wlan0 %s" % IP_BASE_STATION)
 time.sleep(2)
 
 
-
+thread.start_new_thread(test_me,())
 
 #Server listening
 ss = server_init()
@@ -76,15 +95,21 @@ while 1:
 	
 	conn, adress, error, data = server_listening(ss)
 	if data["cmd"] == "add_request":
+		print "\n", "-" * 15, "ADD REQUEST RECEIVED", "-" * 15
 		print "received add request:", data
-		print 'Error:', error
 		print data["source_ip"]
-		add_response(conn,get_avaiable_ip(data["source_ip"]))
+		temporary_ip = get_avaiable_ip(data["source_ip"])
+		add_response(conn, temporary_ip)
 		conn, adress, error, data = server_listening(ss)
 		print "received node report:", data
-		print 'Error:', error
-		aux = data["sensor"]
-		print aux#"!!!!!!!!!!%r" % aux
+		node_db.append(data)
+		save_env(node_db)
+	elif data["cmd"] == "alarm_report":
+		print "\n", "-" * 15, "ALARM REPORT RECEIVED", "-" * 15
+	else:
+		print "\n", "-" * 15, "UNKNOWN CMD RECEIVED", "-" * 15
+
+		
 
 
 
