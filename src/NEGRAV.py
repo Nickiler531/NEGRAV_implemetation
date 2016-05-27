@@ -16,6 +16,9 @@ GET_REQUEST_keys  = ["get_type", "sensor"]
 GET_RESPONSE_keys = ["sensor"]
 ALARM_REPORT_keys = ["node_ip","sensor","value"]
 MOVE_REQUEST_keys = ["target_location"]
+MOVE_UPDATE_keys = ["current_location", "move_delta", "battery"]
+MOVE_DONE_keys = ["current_location", "reason", "battery"]
+MIN_DELTA = 5
 
 """Dictionaries"""
 HEADER= { 
@@ -72,6 +75,21 @@ MOVE_REQUEST ={
 	'road_map':'NULL'
 }
 
+MOVE_UPDATE ={
+	'cmd': 'move_update',
+	'current_location':'NULL',
+	'move_delta': 'NULL',
+	'battery': 'NULL',
+	'current_target':'NULL'
+}
+
+MOVE_DONE ={
+	'cmd': 'move_done',
+	'current_location':'NULL',
+	'reason': 'NULL',
+	'battery': 'NULL',
+}
+
 '''Important Variables'''
 IP_BASE = '10.0.0.100'
 TCP_PORT_SERVER = 5310
@@ -110,7 +128,8 @@ def json_node_report(ip, type, sensor, GPS):
 	else:
 		return "error type"
 	aux["sensor"]=sensor
-	aux["GPS"]=GPS
+	if GPS != "NULL":
+		aux["GPS"]=GPS
 	return json_add_header(HEADER,aux)
 
 def json_get_request(get_type, sensor_list):
@@ -147,6 +166,21 @@ def json_move_request (target_location,road_map):
 	aux["road_map"]=road_map
 	return json_add_header(HEADER,aux)
 
+def json_move_update (location,delta, battery, current_target):
+	aux = MOVE_UPDATE.copy()	
+	aux["current_location"]=location
+	aux["move_delta"]=delta
+	aux["battery"]=battery
+	aux["current_target"]=current_target
+	return json_add_header(HEADER,aux)
+
+def json_move_done (location, reason, battery):
+	aux = MOVE_DONE.copy()	
+	aux["current_location"]=location
+	aux["reason"]=reason
+	aux["battery"]=battery
+	return json_add_header(HEADER,aux)
+
 def negrav_parser(json_msg):
 	try:
 		parsed = json.loads(json_msg) #Dict that contain the parsed json
@@ -178,6 +212,12 @@ def negrav_parser(json_msg):
 			pass
 		elif command == "move_request":
 			for key in MOVE_REQUEST_keys:
+				parsed[key]
+		elif command == "move_update":
+			for key in MOVE_UPDATE_keys:
+				parsed[key]
+		elif command == "move_done":
+			for key in MOVE_DONE_keys:
 				parsed[key]
 		else:
 			print "Command Not found"
@@ -234,13 +274,35 @@ def config_request(ip,assign_ip = '0', node_time = '0', sensor = '0'):
 	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
 	s.close()
 
-
 def move_request(ip, target_location, road_map = '0'):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((ip, TCP_PORT_SERVER))
 	s.sendall(json_move_request(target_location, road_map))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
 	#MIRAR SI SE PUEDE COLOCAR UN TCP ACK
-	s.close()
+	error, data = negrav_parser(s.recv(BUFFER_SIZE))
+	while data["cmd"] == 'move_update':
+		error, data = negrav_parser(s.recv(BUFFER_SIZE))
+	 	if data["cmd"] == 'move_done':
+	 		print "Received move done:", data
+			print "Finished movement"
+			s.close()
+		else:
+			print "Received move update:", data
+	 		location = data["current_location"]
+	 		delta = data["move_delta"]
+	 		current_target = data["current_target"]
+	 		print "movement delta:", delta
+	 		print "current location:", location
+	 		#if current_target != 'NULL':
+	 		print "moving to:", current_target 
+	#if data["cmd"] == 'move_done':
+	#	print "Received move done:", data
+	#	print "Finished movement"
+		if error != 0:
+			s.close()
+	
+	return error,data
+
 
 """------------------------------------------------Node Station Functions----------------------------------------------"""
 
@@ -262,18 +324,21 @@ def add_request(ip):
 
    	return error,data
 
-def node_report(ip, type, sensor, GPS):
+def node_report(ip, type, sensor, GPS="NULL"):
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	s.connect((IP_BASE, TCP_PORT_SERVER))
-	s.sendall(json_node_report(ip, type, sensor, GPS))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
+	if GPS == "NULL":
+		s.sendall(json_node_report(ip, type, sensor, GPS))
+	else:
+		s.sendall(json_node_report(ip, type, sensor, GPS))#On error, an exception is raised, and there is no way to determine how much data, if any, was successfully sent
 	s.close()
 
-def get_response(conn, get_type, sensor_list, sensor_values):
+def get_response(conn, sensor_values, get_type = 'all' , sensor_list = [] ):
+	
 	if get_type == 'all':
 		sensor_list = sensor_values
 	else:
 		i=0
-
 		while i < len(sensor_list):
 			aux = sensor_list[i]
 			if aux == 'battery':
@@ -303,3 +368,21 @@ def alarm_report(ip, sensor_name, value):
 	#error,data = negrav_parser(s.recv(BUFFER_SIZE))
 	s.close()
    	#return data
+   	
+def move_update (conn, target_location, location, delta, battery, range_status, current_target = '0'):
+	
+	if delta < MIN_DELTA:
+		reason = "no_movement"
+	elif range_status == "bad":
+		reason = "out_of_range"
+	elif target_location == location: #probablemente sera necesario utilizar una tolerancia
+		reason = "destination_reached"
+	else:
+		reason = 'moving'
+	print reason
+	conn.sendall(json_move_update(location,str(delta), battery, current_target))
+	return reason
+
+def move_done(conn, location, reason, battery):
+	conn.sendall(json_move_done(location, reason, battery))
+   
