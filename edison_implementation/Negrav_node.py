@@ -59,9 +59,9 @@ def wait_for_add_process():
 def init_env():
 	try:
 		f = open(NODE_CONFIG)
-		info_pickle = pickle.load(f)
+		info_pickle, sensor_pickle, alarm_pickle = pickle.load(f)
 		f.close()
-		return info_pickle
+		return info_pickle, sensor_pickle, alarm_pickle
 	except:
 		print "Fatal Error: Base Files do not exist or are corrupted. Deploy them again"
 		sys.exit()
@@ -78,7 +78,7 @@ def save_env(info_pickle):
 
 
 #Program Start. Load node information
-node_info = init_env()
+node_info, sensor_value, sensor_alarm  = init_env()
 ssid = read_SSID()
 add_process = False
 
@@ -115,8 +115,21 @@ while add_process:
 		os.system("ifconfig wlan0 %s" % ip)
 		os.system("ifconfig wlan0")
 		node_info["node_ip"] = ip;
-		save_env(node_info)
-		node_report (ip,'SN',[{'name':'temp',"units":['C','F']} , {'name':'humidity',"units":['HR','%']} ],('3.53N','6.54E'))# revisar como se envian las coordenadas, aca solo me acepto un entero
+		save_env((node_info, sensor_value, sensor_alarm))
+		node_report(ip, node_info["type"], node_info["sensor"])
 		add_process = False
 
 
+#Server listening
+ss = server_init()
+while 1:
+	
+	conn, adress, error, data = server_listening(ss)
+	if data["cmd"] == "get":
+		print "\n", "-" * 15, "GET REQUEST RECEIVED", "-" * 15
+		print "received get request:", data
+		if data["get_type"] != 'all':
+			get_response(conn, sensor_value, data["type"],data["sensor"])
+		else:
+			get_response(conn, sensor_value)
+	
