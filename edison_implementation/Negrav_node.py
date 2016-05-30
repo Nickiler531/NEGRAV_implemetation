@@ -4,6 +4,10 @@ import time
 import os
 import sys
 import errno
+import pynmea2
+import threading
+import signal
+import math
 
 sys.path.append("/opt/NEGRAV/src")
 from NEGRAV import *
@@ -17,12 +21,25 @@ DIRECTION_ADDRESS = "%s/direction" % GPIO_ADDRESS
 VALUE_ADDRESS = 	"%s/value" % GPIO_ADDRESS
 EXPORT_ADDRESS = 	"/sys/class/gpio/export"
 
+GPS_ON = "46"
+GPS_ADDRESS = "/sys/class/gpio/gpio%s" % GPS_ON
+GPS_DIRECTION_ADDRESS = "%s/direction" % GPS_ADDRESS
+GPS_VALUE_ADDRESS =         "%s/value" % GPS_ADDRESS
+
+
+statusLock = threading.Lock()
+
+
 #Stationary node Ip pool 10.1.0.1 - 10.1.10.255 (assigned by the base Station)
 #stationary node momentary IP pool 10.1.100.1 - 10.1.100.100 (Randomly selected)
 
 #Mobile node Ip pool 10.2.0.1 - 10.2.10.255 (assigned by the base Station)
 #Mobile node momentary IP pool 10.2.100.1 - 10.2.100.100 (Randomly selected)
 
+def signal_handler(signal, frame):
+        print "\n", "-" * 15, "CTRL + C RECEIVED", "-" * 15
+        get_cycle.stop()
+        sys.exit(0)
 
 def assign_momentary_ip(node_type):
 	'''Returns a random ip depending on the type of node'''
@@ -75,12 +92,62 @@ def save_env(info_pickle):
 		print "FATAL ERROR: Could not save de enviroment"
 		sys.exit()
 
+class getCycle (threading.Thread):
+        def __init__(self):
+                threading.Thread.__init__(self)
+		os.system("stty -F /dev/ttyMFD1 4800")
+		if not os.path.exists(GPS_ADDRESS):
+			os.system("echo %s > %s" % (GPS_ON, EXPORT_ADDRESS))
+	                os.system("echo out > %s" % GPS_DIRECTION_ADDRESS)
+		
+		os.system("echo 1 > %s" % GPS_VALUE_ADDRESS)
+		time.sleep(1)
+                os.system("echo 0 > %s" % GPS_VALUE_ADDRESS)
+		self._run = True
+        def stop(self):
+		#To turn off GPS
+		os.system("echo 1 > %s" % GPS_VALUE_ADDRESS)
+                time.sleep(1)
+                os.system("echo 0 > %s" % GPS_VALUE_ADDRESS)
+                self._run = False
+		self.f.close()
+        def run(self):
+                print "\n", "-" * 15, "STARTING THREAD", "-" * 15
+                f = open("/dev/ttyMFD1")
+		streamreader = pynmea2.NMEAStreamReader(f)
+		a = 0
+		while self._run:
+			try:
+				print "trying"
+				msg = streamreader.next()
+				Lat = int(msg.lat[:2]) + float(msg.lat[2:])/60    
+				Lon = int(msg.lon[:3]) + float(msg.lon[3:])/60
+				print Lat, Lon
+				print "%.4f%s,%.4f%s vs %s%s, %s%s" % (Lat, msg.lat_dir, Lon, msg.lon_dir, msg.lat, msg.lat_dir, msg.lon, msg.lon_dir)
+				statusLock.acquire(1)
+				sensor_value["GPS"] = "%.4f%s,%.4f%s" % (Lat, msg.lat_dir, Lon, msg.lon_dir)
+				statusLock.release()
+			except:			
+				pass
+			statusLock.acquire(1)
+			sensor_value["random"] = str(random.randint(1,100))
+			sensor_value["sin"] = math.sin(a)
+			a += 0.1
+			statusLock.release()
+			print "\n", "-" * 15, "SENSORS UPDATED", "-" * 15
+			print sensor_value
+                f.close()
+		return
+
 
 
 #Program Start. Load node information
+signal.signal(signal.SIGINT, signal_handler)
 node_info, sensor_value, sensor_alarm  = init_env()
 ssid = read_SSID()
 add_process = False
+
+get_cycle = getCycle()
 
 #check if the node have an assigned IP or have to be added to a network
 if node_info["node_ip"] == "NULL":
@@ -103,6 +170,8 @@ time.sleep(5)
 os.system("ifconfig wlan0 %s" % ip)
 time.sleep(1)
 os.system("ifconfig wlan0")
+
+get_cycle.start()
 
 while add_process:
 	wait_for_add_process()
