@@ -83,16 +83,16 @@ else:
 	#Sensor basic info
 	Type = "SN" #MN or SN
 	S1={'name':'temp',
-		'units': ['c','F','k'],
-		'resolution':'1c',
-		'range': ['-50F','50F'] }  
+		'units': ['C'],
+		'resolution':'1.5C',
+		'range': ['-40C','125C'] }  
 
 	S2={'name':'acceleration',
 		'units': ['g'],
-		'resolution':'0.1g',
+		'resolution':'0.01g',
 		'range': ['-1.5g','1.5g'] }  
 	
-	S3={'name':'luz',
+	S3={'name':'light',
 		'units': ['lumen'],
 		'resolution':'1lux',
 		'range': ['-5lux','5lux'] }  
@@ -100,7 +100,7 @@ else:
 	sensors = [S1, S2, S3]
 
 	#Sensor values
-	sensor_value = {'temp':"NULL", 'acceleration':"NULL", 'luz':"NULL"}
+	sensor_value = {'temp':"NULL", 'acceleration':"NULL", 'light':"NULL"}
 
 
 	S1_alarm={'name':'temp',
@@ -109,7 +109,7 @@ else:
 	S2_alarm={'name':'acceleration',
 		'alarm': ["NULL","NULL"]}  
 
-	S3_alarm={'name':'luz',
+	S3_alarm={'name':'light',
 		'alarm': ["NULL","NULL"]} 
 
 	sensor_alarms = [S1_alarm, S2_alarm, S3_alarm]
